@@ -1,0 +1,16 @@
+{
+  "name": "rigways-acm",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@10.7.0",
+  "scripts": {
+    "dev": "pnpm -r --parallel dev",
+    "build": "pnpm -r build",
+    "lint": "pnpm -r lint",
+    "test": "pnpm -r test",
+    "format": "pnpm -r format",
+    "db:generate": "pnpm --filter @rigways/api prisma generate",
+    "db:migrate": "pnpm --filter @rigways/api prisma migrate dev",
+    "db:seed": "pnpm --filter @rigways/api prisma db seed"
+  }
+}

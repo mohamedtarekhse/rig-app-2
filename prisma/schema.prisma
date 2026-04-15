@@ -1,0 +1,296 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "mysql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_DATABASE_URL")
+}
+
+enum UserRole {
+  admin
+  manager
+  technician
+  user
+}
+
+enum ClientStatus {
+  active
+  inactive
+  suspended
+}
+
+enum InspectorStatus {
+  active
+  inactive
+}
+
+enum AssetStatus {
+  operation
+  stacked
+  maintenance
+}
+
+enum CertificateApprovalStatus {
+  pending
+  approved
+  rejected
+}
+
+enum JobStatus {
+  active
+  technician_done
+  closed
+  reopened
+}
+
+enum NotificationChannel {
+  in_app
+  email
+  web_push
+}
+
+model User {
+  id                 BigInt             @id @default(autoincrement()) @db.UnsignedBigInt
+  username           String             @unique @db.VarChar(120)
+  fullName           String             @db.VarChar(255)
+  email              String             @unique @db.VarChar(255)
+  role               UserRole           @default(user)
+  passwordHash       String             @db.VarChar(255)
+  clientId           BigInt?            @db.UnsignedBigInt
+  isActive           Boolean            @default(true)
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  client             Client?            @relation(fields: [clientId], references: [id])
+  notifications      Notification[]
+  pushSubscriptions  PushSubscription[]
+  auditLogs          AuditLog[]
+
+  @@index([role, createdAt])
+  @@index([clientId])
+  @@map("users")
+}
+
+model Client {
+  id                  BigInt               @id @default(autoincrement()) @db.UnsignedBigInt
+  clientCode          String               @unique @db.VarChar(32)
+  name                String               @db.VarChar(255)
+  industry            String?              @db.VarChar(255)
+  contact             String?              @db.VarChar(255)
+  email               String?              @db.VarChar(255)
+  phone               String?              @db.VarChar(64)
+  country             String?              @db.VarChar(120)
+  city                String?              @db.VarChar(120)
+  status              ClientStatus         @default(active)
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  users               User[]
+  functionalLocations FunctionalLocation[]
+  assets              Asset[]
+  certificates        Certificate[]
+  jobs                Job[]
+
+  @@index([status, createdAt])
+  @@map("clients")
+}
+
+model FunctionalLocation {
+  id          BigInt     @id @default(autoincrement()) @db.UnsignedBigInt
+  code        String     @unique @db.VarChar(64)
+  name        String     @db.VarChar(255)
+  type        String     @db.VarChar(120)
+  clientId    BigInt?    @db.UnsignedBigInt
+  status      String     @default("active") @db.VarChar(32)
+  description String?    @db.Text
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  client      Client?    @relation(fields: [clientId], references: [id])
+  assets      Asset[]
+  jobs        Job[]
+
+  @@index([clientId, status])
+  @@map("functional_locations")
+}
+
+model Inspector {
+  id             BigInt         @id @default(autoincrement()) @db.UnsignedBigInt
+  inspectorCode  String         @unique @db.VarChar(64)
+  fullName       String         @db.VarChar(255)
+  title          String?        @db.VarChar(255)
+  email          String?        @db.VarChar(255)
+  phone          String?        @db.VarChar(64)
+  status         InspectorStatus @default(active)
+  experienceYears Int?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  jobInspectors  JobInspector[]
+
+  @@index([status, createdAt])
+  @@map("inspectors")
+}
+
+model Asset {
+  id                   BigInt         @id @default(autoincrement()) @db.UnsignedBigInt
+  assetNumber          String         @unique @db.VarChar(64)
+  name                 String         @db.VarChar(255)
+  assetType            String         @db.VarChar(120)
+  status               AssetStatus    @default(operation)
+  clientId             BigInt?        @db.UnsignedBigInt
+  functionalLocationId BigInt?        @db.UnsignedBigInt
+  serialNumber         String?        @db.VarChar(120)
+  manufacturer         String?        @db.VarChar(255)
+  model                String?        @db.VarChar(255)
+  description          String?        @db.Text
+  notes                String?        @db.Text
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @updatedAt
+  client               Client?        @relation(fields: [clientId], references: [id])
+  functionalLocation   FunctionalLocation? @relation(fields: [functionalLocationId], references: [id])
+  certificates         Certificate[]
+
+  @@index([clientId, status, createdAt])
+  @@index([functionalLocationId])
+  @@map("assets")
+}
+
+model Certificate {
+  id                 BigInt                     @id @default(autoincrement()) @db.UnsignedBigInt
+  certificateNumber  String                     @unique @db.VarChar(64)
+  name               String                     @db.VarChar(255)
+  certificateType    String                     @db.VarChar(120)
+  liftingSubtype     String?                    @db.VarChar(120)
+  assetId            BigInt                     @db.UnsignedBigInt
+  clientId           BigInt?                    @db.UnsignedBigInt
+  issuedBy           String                     @db.VarChar(255)
+  issueDate          DateTime                   @db.Date
+  expiryDate         DateTime                   @db.Date
+  approvalStatus     CertificateApprovalStatus  @default(pending)
+  fileObjectKey      String?                    @db.VarChar(255)
+  fileName           String?                    @db.VarChar(255)
+  notes              String?                    @db.Text
+  createdAt          DateTime                   @default(now())
+  updatedAt          DateTime                   @updatedAt
+  asset              Asset                      @relation(fields: [assetId], references: [id])
+  client             Client?                    @relation(fields: [clientId], references: [id])
+  history            CertificateHistory[]
+
+  @@index([clientId, approvalStatus, expiryDate])
+  @@index([assetId])
+  @@map("certificates")
+}
+
+model CertificateHistory {
+  id                BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  certificateId     BigInt    @db.UnsignedBigInt
+  snapshotNumber    Int
+  name              String    @db.VarChar(255)
+  certificateType   String    @db.VarChar(120)
+  approvalStatus    String    @db.VarChar(32)
+  issueDate         DateTime  @db.Date
+  expiryDate        DateTime  @db.Date
+  notes             String?   @db.Text
+  changedAt         DateTime  @default(now())
+  changedByUserId   BigInt?   @db.UnsignedBigInt
+  certificate       Certificate @relation(fields: [certificateId], references: [id])
+
+  @@index([certificateId, changedAt])
+  @@unique([certificateId, snapshotNumber])
+  @@map("certificate_history")
+}
+
+model Job {
+  id                   BigInt     @id @default(autoincrement()) @db.UnsignedBigInt
+  jobNumber            String     @unique @db.VarChar(64)
+  clientId             BigInt     @db.UnsignedBigInt
+  functionalLocationId BigInt?    @db.UnsignedBigInt
+  title                String?    @db.VarChar(255)
+  scope                String?    @db.Text
+  status               JobStatus  @default(active)
+  createdAt            DateTime   @default(now())
+  updatedAt            DateTime   @updatedAt
+  client               Client     @relation(fields: [clientId], references: [id])
+  functionalLocation   FunctionalLocation? @relation(fields: [functionalLocationId], references: [id])
+  inspectors           JobInspector[]
+  events               JobEvent[]
+
+  @@index([clientId, status, createdAt])
+  @@index([jobNumber])
+  @@map("jobs")
+}
+
+model JobInspector {
+  id           BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  jobId        BigInt    @db.UnsignedBigInt
+  inspectorId  BigInt    @db.UnsignedBigInt
+  assignedAt   DateTime  @default(now())
+  assignedById BigInt?   @db.UnsignedBigInt
+  job          Job       @relation(fields: [jobId], references: [id])
+  inspector    Inspector @relation(fields: [inspectorId], references: [id])
+
+  @@unique([jobId, inspectorId])
+  @@index([inspectorId])
+  @@map("job_inspectors")
+}
+
+model JobEvent {
+  id          BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  jobId        BigInt   @db.UnsignedBigInt
+  eventType    String   @db.VarChar(80)
+  description  String?  @db.Text
+  payloadJson  Json?
+  createdById  BigInt?  @db.UnsignedBigInt
+  createdAt    DateTime @default(now())
+  job          Job      @relation(fields: [jobId], references: [id])
+
+  @@index([jobId, createdAt])
+  @@map("job_events")
+}
+
+model Notification {
+  id          BigInt               @id @default(autoincrement()) @db.UnsignedBigInt
+  userId      BigInt               @db.UnsignedBigInt
+  channel     NotificationChannel  @default(in_app)
+  type        String               @db.VarChar(120)
+  title       String               @db.VarChar(255)
+  body        String?              @db.Text
+  isRead      Boolean              @default(false)
+  sentAt      DateTime?
+  createdAt   DateTime             @default(now())
+  user        User                 @relation(fields: [userId], references: [id])
+
+  @@index([userId, isRead, createdAt])
+  @@map("notifications")
+}
+
+model PushSubscription {
+  id          BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  userId      BigInt   @db.UnsignedBigInt
+  endpoint    String   @db.Text
+  p256dh      String   @db.Text
+  auth        String   @db.Text
+  userAgent   String?  @db.VarChar(255)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  user        User     @relation(fields: [userId], references: [id])
+
+  @@unique([userId, endpoint(length: 191)])
+  @@map("push_subscriptions")
+}
+
+model AuditLog {
+  id            BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  actorUserId    BigInt?  @db.UnsignedBigInt
+  action         String   @db.VarChar(120)
+  entityType     String   @db.VarChar(120)
+  entityId       String?  @db.VarChar(120)
+  clientId       BigInt?  @db.UnsignedBigInt
+  metadataJson   Json?
+  createdAt      DateTime @default(now())
+  actor          User?    @relation(fields: [actorUserId], references: [id])
+
+  @@index([action, createdAt])
+  @@index([entityType, entityId])
+  @@index([clientId])
+  @@map("audit_logs")
+}
