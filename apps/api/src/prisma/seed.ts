@@ -1,5 +1,7 @@
 import argon2 from 'argon2';
-import { PrismaClient, UserRole } from '@prisma/client';
+import prismaPackage from '@prisma/client';
+
+const { PrismaClient, UserRole } = prismaPackage;
 
 const prisma = new PrismaClient();
 

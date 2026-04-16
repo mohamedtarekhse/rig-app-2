@@ -5,7 +5,8 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
 import { Injectable } from '@nestjs/common';
-import { PrismaClient } from '@prisma/client';
+import prisma from '@prisma/client';
+const { PrismaClient } = prisma;
 let PrismaService = class PrismaService extends PrismaClient {
     async onModuleInit() {
         await this.$connect();
