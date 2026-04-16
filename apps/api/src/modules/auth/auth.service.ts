@@ -1,16 +1,18 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import argon2 from 'argon2';
-import { UserRole } from '@prisma/client';
+import prismaPackage from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { LoginDto } from './dto/login.dto.js';
+
+const { UserRole } = prismaPackage;
 
 type SessionUser = {
   id: bigint;
   username: string;
   fullName: string;
   email: string;
-  role: UserRole;
+  role: (typeof UserRole)[keyof typeof UserRole];
   clientId: bigint | null;
 };
 

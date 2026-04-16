@@ -1,5 +1,7 @@
 import mysql from 'mysql2/promise';
-import { PrismaClient } from '@prisma/client';
+import prismaPackage from '@prisma/client';
+
+const { PrismaClient } = prismaPackage;
 
 const prisma = new PrismaClient();
 

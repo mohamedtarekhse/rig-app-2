@@ -10,7 +10,9 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import argon2 from 'argon2';
+import prismaPackage from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service.js';
+const { UserRole } = prismaPackage;
 let AuthService = class AuthService {
     prisma;
     jwtService;

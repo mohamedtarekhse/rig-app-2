@@ -1,5 +1,6 @@
 import mysql from 'mysql2/promise';
-import { PrismaClient } from '@prisma/client';
+import prismaPackage from '@prisma/client';
+const { PrismaClient } = prismaPackage;
 const prisma = new PrismaClient();
 async function main() {
     const legacyUrl = process.env.LEGACY_DATABASE_URL;
