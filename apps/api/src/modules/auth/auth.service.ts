@@ -73,7 +73,7 @@ export class AuthService {
       {
         secret: process.env.JWT_ACCESS_SECRET,
         expiresIn: process.env.JWT_ACCESS_TTL ?? '15m',
-      },
+      } as never,
     );
 
     const refreshToken = await this.jwtService.signAsync(
@@ -81,7 +81,7 @@ export class AuthService {
       {
         secret: process.env.JWT_REFRESH_SECRET,
         expiresIn: process.env.JWT_REFRESH_TTL ?? '7d',
-      },
+      } as never,
     );
 
     return {
